@@ -13,14 +13,47 @@ options(stringsAsFactors = FALSE)
 library(GenomicRanges)
 library(rtracklayer)
 library(tidyverse)
-library(ggpubr)
-library(Gviz)
-source("../../../util/_setup.R")
-source("../../../util/intersect_functions.R")
-source("../../../util/plotting_functions.R")
+
+
 ```
 
-# Welcome to RStudio-viz! Let's take a little tour.
+# First task today is to clone the class repository and create R project in R-studio
+
+1) Goto class repository on boulderrinnlab git hub (class 2022)
+
+2) Copy SSH code 
+
+3) Clone directory in your folder: (/scratch/Shares/rinnclass/<your_folder>)
+- fromy your terminal
+
+4) once cloned goto R-studio and open a new project (top right corner dropdown)
+- choose from existing directory.
+- Navigate to the CLASS_2020 dir you just cloned
+- click open
+
+5) navigate to "class_exeRcises"
+
+5) Create a new folder called "analysis" (button bottom right pannel first tab on left)
+
+6) inside "analysis" create another folder called "04_instlaling_packages"
+
+7) set this as your working directory (bottom right pannel - blue cog drop down)
+
+8) Navigate back to the 04_.RMD in clasexeRcises 
+
+
+Here is my change****
+
+
+9) Make a change (enter a space whatever)
+
+10) Commit and push this to your git hub repository.
+
+
+
+
+
+# Now that we are all set up we can start installing packges
 
 First we need to learn how to install packages. Let's find out what version of R we are using.
 
@@ -37,13 +70,13 @@ install.packages("tidyverse")
 
 Cool we have our first package installed.
 
-However sometimes we ned to install from Bioconductor and need to use BiocManager::install function
+However sometimes we need to install from Bioconductor and need to use BiocManager::install function
 
 ```{R install BiocManager}
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
 install.packages("BiocManager", version = '3.10')
-BiocManager::install("GenomicRanges")
+
 
 ```
 
@@ -52,17 +85,32 @@ BiocManager::install("GenomicRanges")
 Some packages like GenomicRanges are from Bioconductor and those will
 need to be installed with the BiocManager::install function.
 
+```{R install genomic ranges}
+
+# Here is an example BiocManager::install
+
+BiocManager::install("GenomicRanges")
+
+# try installing all the packages listed above.
+
+# note use either install.packages or BiocManager::install
+
+rtracklayer
+tidyverse
+
+```
+
+
 # ------------------------- R basic data analysis  -------------------------
-# All the files needed for this exeRcise can be downloaded here
+# All the files needed for this exeRcise can be downloaded here 
 
 ```{BASH DOWNLOAD DATA NEEDED FOR LESSON IF NOT IN CLASS}
 
 #  https://www.dropbox.com/sh/76etjxl10v2hcuc/AAAIk9a6aMhw8CvUtKlFnMn6a?dl=0
 
-wget (url_above) # check your directory.
+# wget (url_above) # check your directory.
 
 ```
-
 
 Now let's use an example data file we will produce and how we can use R to do
 some quick analyses.
@@ -74,7 +122,7 @@ We will addres the following two questions as an example:
 ```{r read in peaks per DBP}
 
 # read in csv file that has number of peaks and genome coverage
-peaks_per_dbp <- read_csv("../../../../../data/number_of_peaks_per_dbp.csv")
+peaks_per_dbp <- read_csv("/scratch/Shares/rinnclass/CLASS_2022/data/number_of_peaks_per_dbp.csv")
 
 # Now we have an object in the environment that is called 'peaks_per_dbp'
 head(peaks_per_dbp)
@@ -90,6 +138,7 @@ head(peaks_per_dbp)
 # Let's get more infomration about these peaks with table
 
 table(peaks_per_dbp$dbp)
+summary(table(peaks_per_dbp$dbp))
 
 # Not very useful in this case because there is only one entry for each DBP
 
@@ -97,7 +146,6 @@ summary(peaks_per_dbp$num_peaks)
 # Ok this is super helpful - we see the quartiles for each of the categories
 
 ```
-
 
 # Which DBP has the most or least peaks?
 
@@ -118,8 +166,7 @@ peaks_per_dbp$num_peaks > 40000
 ```{R filter largets number of peaks}
 
 #To solve this we can use filter and set a variable using <-
-max_peaks <- dplyr::filter(peaks_per_dbp, num_peaks > 40000)
-
+max_peaks = dplyr::filter(peaks_per_dbp, num_peaks > 40000)
 
 # Let's see what else we can do with filter
 
@@ -133,6 +180,10 @@ max_peaks <- dplyr::filter(peaks_per_dbp, num_peaks > 30000, total_peak_length =
 
 # Let's find the DBP(s) with the fewest peaks (we saw in summary it was 263)
 ```{r filter smallest number of peaks}
+
+summary(peaks_per_dbp$num_peaks)
+
+# we see that 263 is the min number of peaks.
 
 min_peaks <- filter(peaks_per_dbp, num_peaks < 264)
 
@@ -158,7 +209,9 @@ peaks_per_dbp$newcol <- "What?"
 # Now let's assign a number to each DBP in another new column
 ```{R new column populating with a function}
 
+#TODO start here
 peaks_per_dbp$id <- 1:nrow(peaks_per_dbp)
+peaks_per_dbp[1:5,]
 
 ```
 
@@ -167,6 +220,9 @@ peaks_per_dbp$id <- 1:nrow(peaks_per_dbp)
 
 peaks_per_dbp[1:5, 1]
 
+# IMPORTANT : R is always indexes by rows, then columns (comma seperates)
+# So above we see take rows one through five and column 1 information.
+
 # More on R indexing https://stats.idre.ucla.edu/r/modules/subsetting-data/
 
 ```
@@ -174,7 +230,7 @@ peaks_per_dbp[1:5, 1]
 # Let's remove a column using indexing
 ```{R remove a column using indexing}
 
-# let's remove the what column
+# let's remove the "what" column we just made above
 peaks_per_dbp <- peaks_per_dbp[,-4]
 
 ```
@@ -189,8 +245,10 @@ hist(peaks_per_dbp$num_peaks, breaks = 40)
 # saving the figure (we will do this over and over again :)
 # we will learn ggplot later but we use PDF and turn of null device (plot window) 
 
+# MAKE SURE YOU ARE IN RIGHT WORKING DIR analysis/04_x
+
 pdf("figures/hist_of_peaks_per_dbp.pdf")
-hist(peaks_per_dbp$num_peaks, breaks = 40) 
+hist(peaks_per_dbp$num_peaks, breaks = 60) 
 dev.off()
 
 # note always check working directory before saving.
@@ -239,6 +297,7 @@ table(grepl(pattern_to_search, peaks_per_dbp$dbp))
 # So df[,] = all rows/cols, df[1,] = first row all columns etc.
 
 ppdbp_subset <- peaks_per_dbp[grepl(pattern_to_search, peaks_per_dbp$dbp),]
+ppdbp_subset2 <- peaks_per_dbp[peaks_per_dbp$dbp == "POLR2A" | peaks_per_dbp$dbp == "POLR2B" | peaks_per_dbp$dbp == "SUPT5H",]
 
 # note we only took the rows for the genes of interest. Then all the cols with (,)
 # R syntax is rows,columns.
@@ -253,7 +312,8 @@ ppdbp_subset <- peaks_per_dbp[grepl(pattern_to_search, peaks_per_dbp$dbp),]
 
 # %in% will find all the data "in" the list being searched "genes"
 
-peaks_per_dbp$dbp %in% genes
+peaks_per_dbp[peaks_per_dbp$dbp %in% genes,]
+logical_vector <- peaks_per_dbp$dbp %in% genes
 
 # Now we will set a variable as the output using filter and then the code we just ran
 
@@ -287,8 +347,6 @@ hist(peaks_per_dbp$total_peak_length)
 
 ```
 
-
-
 # Now let's explore the power of mutate syntax with a function.
 # We will try it with a more complex function using ifelse logic
 
@@ -308,6 +366,13 @@ peaks_per_dbp <- peaks_per_dbp %>%
 EXCERCISE
 *********************
 
-Use what we learned above to plot a historgram of all the proteins that are in the medium sized category for total genome coverage.
+Use what we learned above to plot a histogram of all the proteins that are in the medium sized category for total genome coverage.
 
 Make a table with just the medium coverage DBPs
+```{r mutate if else statement}
+hist(peaks_per_dbp[peaks_per_dbp$genome_coverage_size == "medium",]$total_peak_length)
+
+
+summary(table(peaks_per_dbp[peaks_per_dbp$genome_coverage_size == "medium",]$dbp))
+
+```
