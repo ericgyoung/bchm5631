@@ -13,7 +13,7 @@ Input files
 
 The NF_CORE ChIPseq pipeline requires a few input files.
 
-1) Config file:  tells next flow how to talk to Fiji
+1) Config file:  tells nextflow how to talk to Fiji
 2) shell script: info on what resources can be used on Fiji & where input files are for pipeline
 3) design file: This has all the info needed for ChIP data (replicates, input controls etc)
 
@@ -149,7 +149,7 @@ First step is the basic SLURM set up
 
 ```
 
-Now we are goint to set up the resources to be used on FIJI (be careful in practice
+Now we are going to set up the resources to be used on FIJI (be careful in practice
 
 ```{bash slurm instructions}
 #SBATCH --nodes=1
@@ -172,7 +172,7 @@ Now we are goint to set up the resources to be used on FIJI (be careful in pract
 
 ## The other noteable is the "WALL CLOCK" 
 ## THIS IS WHERE GOOD MANNERS come into play. You want to test this out on a few
-## files and then think about how it will scale. This run.sh file is for thousadnds
+## files and then think about how it will scale. This run.sh file is for thousands
 ## of FASTQ files, we will change the wall clock.
 
 ```
@@ -204,7 +204,7 @@ echo "Here we go again $SLURM_CPUS_ON_NODE core."
 # the echo command is sort of silly and just let's you know the SLURM set up was successful!
 
 
-module load singularity/3.1.1
+module load singularity/3.1.1 # 3.1.1 specifies version of singularity
 
 # module load singularity/3.1.1 is going to load singularity & tell bash to use singularity.
 
@@ -262,16 +262,116 @@ date
 # This is a bash command that simply prints the date
 ```
 
-Here is the full "run.sh" script with slurm instructions and nextflow.
+Here is a full "run.sh" script with slurm instructions and nextflow.
 
-```{bash run.sh}
+```{SLURM and NEXTFLOW run.sh}
 
+#!/bin/bash
+#SBATCH -p short
+#SBATCH --job-name=CTCF_test
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=teva8543@colorado.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --mem=6gb
+#SBATCH --time=10:00:00
+#SBATCH --output=nextflow.out
+#SBATCH --error=nextflow.err
+pwd; hostname; date
+echo "Lets go"
+module load singularity/3.1.1
+nextflow run nf-core/chipseq -r 1.2.1 \
+-profile singularity \
+--paired_end \
+--input design.csv \
+--fasta /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v38/GRCh38.primary_assembly.genome.fa \
+--gtf /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v38/gencode.v38.annotation.gtf \
+--macs_gsize 3.2e9 \
+--blacklist /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v38/hg38-blacklist.v2.bed \
+--email teva8543@colorado.edu \
+-resume \
+-c nextflow.config
+date
 
 
 ```
 
+Here is the full config file
+```{BASH}
 
-```{r}
+process {
+  executor='slurm'
+  queue='short'
+  memory='32 GB'
+  maxForks=10
+}
 
 ```
 
+Now all you need is a design file with correct headers.
+
+group,replicate,fastq_1,fastq_2,antibody,control
+
+### RUN TIME
+
+With these three files in the directory you want to run your analysis
+all you need to do is :
+
+```{SLURM running shell script}
+
+sbatch run.sh
+
+# Then to track progress :
+
+tail -f nextflow.out
+
+```
+
+final design.csv:
+group,replicate,fastq_1,fastq_2,antibody,control,,,,
+POLR2A,3,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000XWJ.fastq.gz,,POLR2A,ENCSR000EEN
+POLR2A,2,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000PNT.fastq.gz,,POLR2A,ENCSR000BLH
+POLR2A,4,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000XWR.fastq.gz,,POLR2A,ENCSR000EEN
+POLR2A,1,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000PNM.fastq.gz,,POLR2A,ENCSR000BLH
+ENCSR000EEN,1,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000XTF.fastq.gz,,,
+ENCSR000BLH,2,/scratch/Shares/rinnclass/CLASS_2022/fastq/ENCFF000POQ.fastq.gz,,,
+
+final nextflow.config
+process {
+  executor='slurm'
+  queue='short'
+  memory='32 GB'
+  maxForks=10
+}
+
+final run.sh
+#!/bin/bash
+#SBATCH -p short
+#SBATCH --job-name=Hepg2_Pol_test
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=eryo3113@colorado.edu
+#SBATCH --output=nextflow.out
+#SBATCH --error=nextflow.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --mem=6gb
+#SBATCH --time=14:00:00
+
+pwd; hostname; date
+echo "Lets go chipseqing"
+
+module load singularity/3.1.1
+
+nextflow run nf-core/chipseq -r 1.2.1 \
+-profile singularity \
+--single_end \
+--input design.csv \
+--fasta /Shares/rinn_class/CLASS_2022/data/genomes/human/gencode/v32/GRCh38.p13.genome.fa \
+--gtf /Shares/rinn_class/CLASS_2022/data/genomes/human/gencode/v32/gencode.v32.annotation.gtf \
+--macs_gsize 3.2e9 \
+--blacklist /scratch/Shares/rinnclass/CLASS_2022/data/hg38-blacklist.v2.bed \
+--email eryo3113@colorado.edu \
+-resume \
+-c nextflow.config
+
+date
