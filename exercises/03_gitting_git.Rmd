@@ -1,6 +1,6 @@
 ---
 title: "Git to BASH"
-author: "JR"
+author: "JR - Eric"
 date: "9/26/2021"
 output: html_document
 ---
