@@ -1,14 +1,37 @@
 ---
-title: "07_run_chip_seq"
+title: "07_run_chip_seq" 
 Author: "JR"
 Date: "09/29/2021
 output: html_document
 ---
+Let's look at our results:
+Basepath: 
+"/scratch/Shares/rinnclass/CLASS_2022/Your_FOLDER/CLASS_2022/class_exeRcises/analysis/06_nf_core_first_chip_Seq/data/"
+
+# Here is the individual qc files:
+
+results/fastqc/ *.html
+
+# All QC combined and more:
+
+results/multiqc/broadPeak/multiqc_report.html
+
+# Here are the peak files:
+
+results/bwa/mergedLibrary/macs/broadPeak
+
+# Pipeline run information:
+
+results/pipeline_info/pipeline_report.html
+
+results/pipeline_info/results_description.html
+
+
+NOW:
 
 We are about to run our first chipseq analysis!! 
 
 First we need to know how to run jobs, check on them and most importantly cancel them!
-
 
 *******************************************
 Running and Checking on slurm jobs
@@ -19,9 +42,7 @@ simply type:
 
 Don't run yet though
 ```{BASH run.sh}
-
 sbatch run.sh
-
 ```
 This will have sbatch send the scripts in the run.sh file to slurm to run them. 
 
@@ -29,9 +50,7 @@ This will have sbatch send the scripts in the run.sh file to slurm to run them.
 --- what jobs are you running? You often want to see what job is running how long it is taking and other aspects. To that end we can use 'squeue' to see what is running
 
 ```{BASH jobs in queue}
-
 squeue -u identikey
-
 ```
 
 the -u flag is for user.
@@ -39,28 +58,21 @@ examine the information provided and google the column headers for more info.
 
 # canceling jobs!
 
-
 Let's say you accidently hit the run button and want to cancel immediately.
 
 'scancel' is the command
 
 ```{BASH scancel}
-
 squeue -u identikey # lists all jobs you are currently running
-
 scancel jobid #cancels a single job
-
 scancel -u identikey #cancels all running jobs (with nextflow pipelines this is commonly used)
 ```
 
 # canceling multiple jobs:
 
 ```{BASH canceling specific jobs}
-
 squeue -u identikey | grep commonjobid# | awk '{print $1}' | xargs -n 1 scancel
-
 squeue -u jori2700  | grep 591 | awk '{print $1}' | xargs -n 1 scancel
-
 ```
 
 Here we are using some bash to grab all the jobs running. They will typically have a common number (591 in example above -- would have aloso worked with just 5).
