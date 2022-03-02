@@ -200,13 +200,15 @@ tss <- promoters(gencode_gr[gencode_gr$type == "gene"],
 summary(gencode_gr[gencode_gr$type == "gene"])
 # cool the same
 
-# More weird 1nt features
-length(which(width(start_codons) == 1))
-# 567 start codons 1nt long -- that can't be right :)
+
 
 # This code will search for any feature and see if any are 1nt
 start_codons <- gencode_gr[gencode_gr$type == "CDS"]
 summary(width(start_codons))
+
+# More weird 1nt features
+length(which(width(start_codons) == 1))
+# 567 start codons 1nt long -- that can't be right :)
 
 ```
 
@@ -289,14 +291,18 @@ pol2_chip <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2022/data/POLR
 # promoters function
 Now let's define the promoters using the handy promoters function in GRanges
 
+# peaks overlaps vs promoter overlaps
+# promoter      __Pr__   ___Pr___   __Pr____         #3 promoters, last one overlaps 2 peaks 
+# peaks       ______peak______________   ___peak____ #2 peaks, the first overlaps 3 promoters, second overlaps 1 promoter
+
 ```{R promoters}
 
-?promoters
+# ?promoters
 
 # let's add 3Kb upstream and downstream from the TSS to define "promoters"
 gencode_promoters <- promoters(gencode_gr[gencode_gr$type == "gene"], 
-                               upstream = 3e3, 
-                               downstream = 3e3)
+                               upstream = 3, #3e3
+                               downstream = 3) #3e3
 
 
 length(gencode_promoters)
@@ -371,6 +377,7 @@ at_to_table <- table(promoter_overlaps@to) %>% as.data.frame()
 
 # Number of peaks that overlap promoters
 length(table(promoter_overlaps@from))
+
 length(unique(promoter_overlaps@from))
 # 10,255 peaks, have 7,738 overlaps in @to (promoters)
 
@@ -445,6 +452,6 @@ EXCERCISE
 
 
 What happens if we shrink the promoter windows? Some standards are 2Kb upstream 1kb down stream. 
-Some could be as small as 1Kb upstream 500Kb downstream. Try two different promter window sizes and record
+Some could be as small as 1Kb upstream 500Kb downstream. Try two different promoter window sizes and record
 @from and @to values as well as unique peaks. 
 
