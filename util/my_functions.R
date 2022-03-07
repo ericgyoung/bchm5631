@@ -75,6 +75,32 @@ read_peaks <- function(broad_peak_file, filter_to_canonical_chr = TRUE) {
 #' @param 
 #'  the path to consensus peak files
 #' # We're going to iterate over all the files to make it work. 
+intersect_peaks <- function(peak_list) {
+
+    combined_peaks <- peak_list[[1]]
+    for(i in 2:length(peak_list)) {
+      suppressWarnings(pl_ov <- findOverlaps(combined_peaks, peak_list[[i]]))
+      pl1 <- combined_peaks[unique(pl_ov@from)]
+      pl2 <- peak_list[[i]][unique(pl_ov@to)]
+      suppressWarnings(combined_peaks <- GenomicRanges::reduce(union(pl1, pl2)))
+
+    }
+    return(combined_peaks)
+  }
+
+
+
+###############################################
+#' intersect replicates into a "consensus peak list" 
+#' 
+#' @description 
+#' this function will take the  union of peak widths across replicates for a given
+#' DNA binding protein. the function that will take a list of granges objects and return 
+#  one granges object with merged peaks that are in all replicates
+#' 
+#' @param 
+#'  the path to consensus peak files
+#' # We're going to iterate over all the files to make it work. 
 create_consensus_peaks <- function(broadpeakfilepath = "/scratch/Shares/rinnclass/CLASS_2022/data/peaks/") {
   
   # For now we can set broadpeakfilepath
