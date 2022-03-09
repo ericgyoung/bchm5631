@@ -163,7 +163,34 @@ create_consensus_peaks <- function(broadpeakfilepath = "/scratch/Shares/rinnclas
   }
   return(consensus_peaks)
 }
+###############################################
+#' function to subset features for promomters. 
+#' 
+#' @description feature_subset
+#' Take a gencode gtf to subset the biotype of promoters we want as a set of GRanges
+#' 
+#' @param gencode_gr
+#'  set of genomic features as a GRanges object
+#'  
+#' @param biotype
+#' this takes "lncRNA" or "protein-coding" as input for promoter type
+#'
+#' @param upstream
+#'To add upstream sequence to feature subset
+#'
+#' @param downstream
+#'To add downstream sequence to feature subset
 
+get_promoter_regions <- function(gencode_gr, biotype, upstream = 3e3, downstream = 3e3) {
+  
+  genes <- gencode_gr[gencode_gr$type == "gene"]
+  genes <- genes[genes$gene_type %in% biotype]
+  
+  proms <- GenomicRanges::promoters(genes, upstream = upstream, downstream = downstream)
+  
+  return(proms)
+  
+}
 
 
 
