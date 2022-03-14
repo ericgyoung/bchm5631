@@ -52,6 +52,9 @@ names(filtered_consensus_peaks) <- gsub("/Users/eryo3113/CLASS2022/EricY/bchm/ex
 
 names(filtered_consensus_peaks)
 # names(filtered_consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/11_consensus_peaks/filtered_consensus_peaks/|_filtered_consensus_peaks.bed","", filtered_consensus_peaks_files)
+
+gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2022/data/genomes/gencode.v32.annotation.gtf")
+
 ```
 
 # importing genome feature files
@@ -136,11 +139,12 @@ num_peaks_df$peaks_overlapping_mrna_genebody <-
 # This is a time saver from having to regenerate the overlaps that took a bit ...
 # NOTE: SET WORKING DIRECTORY TO 12_
 # BE SURE YOU HAVE THE RIGHT FILE PATH to 12_
-write_csv(num_peaks_df, "num_peaks_df.csv")
+# write_csv(num_peaks_df, "num_peaks_df.csv")
+# num_peaks_df = read_csv("num_peaks_df.csv")
 ```
 
 # Downloading TF annotation data set
-We have a large group of different DBPs so let's import some annotaitons of which
+We have a large group of different DBPs so let's import some annotations of which
 ones are transcription factors etc. A paper in Cell is one of the better annotations --
 however they are never perfect :)
 
@@ -150,7 +154,7 @@ https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b
 Let's download the file using R (we could also use curl/wget in BASH)
 ```{r downloading TF annotation data}
 url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
-destination_for_url <- "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/TF_annotations.xlsx"
+destination_for_url <- "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/TF_annotations.xlsx"
 # to download we can use download.file
 download.file(url, destination_for_url)
 # The above is a handy bit of code for downloading data into R directly,but BASH works too
@@ -163,12 +167,12 @@ a new 'read' function (we have used 'read.table' & 'read.csv' etc).
 
 To this end we will use readX1 'read_excel' function.
 ```{R merging in TF annotation data}
-human_tfs <- readxl::read_excel("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/TF_annotations.xlsx",
+human_tfs <- readxl::read_excel("/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/TF_annotations.xlsx",
                                 sheet = 2, skip = 1)
 # let's rename the 4th column to indicate if it is a TF.
 names(human_tfs)[4] <- "is_tf"
 # now let's intersect gene names that are in our ChIP data and has TF identity.
-length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$dbp)))
+length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
 ```
 
 # merging annotation file to num_peaks_df
@@ -182,12 +186,12 @@ names(human_tfs) <- c("ensembl_id",
                       "dbd",
                       "tf")
 # Now comes the actual merge. Let's look at it first
-# ?merge
+?merge
 num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T)
 # Let's check how many NAs -- we should have some missing values.
-length(is.na(num_peaks_df$is_tf))
+length(num_peaks_df[is.na(num_peaks_df$tf),]$tf)
 # Ok looks good let's write it out:
-write_csv(num_peaks_df, "file_path/num_peaks_df.csv")
+write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/num_peaks_df.csv")
 # write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/num_peaks_df.csv")
 ```
 
@@ -205,7 +209,7 @@ stopifnot(all(colnames(promoter_peak_occurence) == lncrna_mrna_promoters$gene_id
 # we are going to write it out a tab seperated values (tsv) file
 # moving forward we will use (?read.tsv) to read this in and save us all that run time :)
 # DON'T OPEN THIS FILE IN THE ENVIRONMENT -- VERY LARGE MATRIX
-write.table(promoter_peak_occurence, "/file_path/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
 # write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
 ```
 
@@ -227,7 +231,7 @@ peak_occurence_df <- data.frame("gene_id" = colnames(promoter_peak_occurence),
                                 "number_of_dbp" = colSums(promoter_peak_occurence))
 # Go through each population index by highlighting and running
 # Let's write out this data frame -- all this code & run time is now encapsulated in one .csv :)
-write_csv(peak_occurence_df, "file_path/peak_occurence_dataframe.csv")
+write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/peak_occurence_dataframe.csv")
 # write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/peak_occurence_dataframe.csv")
 # Cool feel free to open this one -- even in excel :) 
 ```

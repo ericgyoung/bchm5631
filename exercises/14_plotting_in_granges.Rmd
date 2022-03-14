@@ -1,7 +1,7 @@
 ---
-title: "our_data_in_ranges"
+title: "14_plotting_R_I"
 author: "JR"
-date: "11/3/2021"
+date: "11/2/2021"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -9,295 +9,421 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(GenomicRanges)
-source("../../../util/intersect_functions.R")
-source("../../../util/plotting_functions.R")
-source("../../../util/_setup.R")
-library(Gviz)
-library(ggpubr)
 library(ggplot2)
+# install.packages("ggplot2")
+install.packages("broom")
+library(ggpubr)
+library(tidyverse)
+# source("/scratch/Shares/rinnclass/CLASS_2022/<your_folder>/CLASS_2022/util/plotting_functions.R")
+# source("/scratch/Shares/rinnclass/CLASS_2022/<your_folder>/CLASS_2022/util/_setup.R")
+source("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/util/plotting_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/util/_setup.R")
 ```
 
+One of the best parts of R is the plotting abilities. You are, by analogy designing your own figures with code. You can run many stastical analyses and plot the outputs in the code to make a figure. Here we will focus on GGPLOT(GGPLOT2). The GG says it all:
 
-Alright time to start digging into the data for new results !!
-We have made a consensus peak file for each DBP and 
-Moreover, we have a data frame of a bunch of peak overlap features for each DBP.
+"Grammar of Graphics" -- it truly is a very pure and flexible way of plotting data for figures!
 
-# Loading in consensus peaks
+There are 8 possible layers of information -- each building on the data layer that you are importing. This looks really confusing but we will slowly build up from the basics (mapping, stats, geom)
 
-First let's load in the consensu peak files (this is something we always have to do)
+Plotting layers of R:
 
-```{r loading consensus peaks}
+1) Data -- data being plotted from object indexes etc.
 
-# read in file list to lapply import below
+2) MAPPING -- mapping data (aes)
 
-fl <- list.files("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/11_consensus_peaks/filtered_consensus_peaks/", full.names=TRUE)
+3) Statistics -- statistical analyses on mapped data
 
-# loading each consensus peak bed file into a list of GRanges
-filtered_consensus_peaks <- lapply(fl, rtracklayer::import, format = "bed")
+4) scales -- how big small you want things
 
+5) GEOMETRIES -- what type of plots you are making (geom)
 
-# Let's take a look since this is an important first step.
-# Ok we should probably add some names -- another common task.
-# we can get name from @elementdata$listdata$name
-filtered_consensus_peaks[[40]]$name %>%
-  head()
+6) Facets -- making multiple representations of plots
 
-# cool now we can strsplit this to get the name 
-# on the left of  x_ [1] indicates take the left
-# let's use strplit to clean the name up by splitting on _
+7) Coordinates -- specifying placement of image aspects
 
-?strsplit
-# let's add names to our consensus peaks list of GRanges
-# selecting the left of the split with index [1]
+8) THEME -- a set version of colors, background. Mostly so you don't have to add many of the layers above every time!
 
+Ok let's walk through some simple examples to more difficult figures using these layers!
 
-names(filtered_consensus_peaks) <- sapply(filtered_consensus_peaks, function(x){
-  unlist(strsplit(x$name, "_"))[[1]]
-})
-
-# Now we have a named list of consensus peaks in the environment -- let's take a look
-```
+Layer 1 : DATA (data types matter so good to label object accrodingly)
 
 # loading in num_peaks_df
-Let's load in our num_peaks_df and decide if we want to filter?
-```{r num_peaks_df}
 
-# loading in our previous analyses:
-
-num_peaks_df <- read.csv("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/num_peaks_df.csv")
-
-
-# filtered_consensus_peaks <- consensus_peaks[sapply(consensus_peaks, length) > num_peaks_threshold]
-
-# Could also filter like this:
-
-# filtered_consensus_peaks <- consensus_peaks[dbps_with_sufficient_peaks]
-
-# we can record the result of what percentile this cutoff is at :
-# threshold_percentile <- round(ecdf(num_peaks_df$num_peaks)(num_peaks_threshold)*100,1)
-
+```{r loading in num_peaks_df}
+# before we get started let's import that data we are going to plot. 
+# Let's load in the num_peaks_df from our previous class (13_ChIP_peak_features)
+num_peaks_df <- read_csv('/Users/eryo3113/CLASS2022/EricY/bchm/exercises/analysis/12_peak_features/num_peaks_df.csv')
+# num_peaks_df <- read_csv('/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/num_peaks_df.csv')
+# num_peaks_df <- num_peaks_df[1:12]
+# write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/num_peaks_df.csv")
 ```
 
-
-# Let's plot some data and see what we might learn
-Ok enough set up let's dig in with making some plots!
-
-
-```{r plotting peak features}
-
-# First let's look at a histogram of peak#/DBP
-
- ggplot(num_peaks_df, aes(x = num_peaks)) + 
-  geom_histogram(bins = 70)
+# GGPLOT AES Layer and Geom : basic example
+Now let's start plotting in GGplot!
 
 
+```{r ggplot basics}
+?ggplot
+# ggplot first wants the data parameter, then an 'aesthetics' layer (aes)
+# aes() layer needs everything you want to do with the data. The + adds the next layer.
+# let's make this simple plot first: number of peaks -vs- total peak length
+ggplot(num_peaks_df, aes(x = num_peaks,
+                         y = total_peak_length)) +
+  geom_point() + theme_minimal()
+# We have a result! The more peaks the more genome space is covered.
+# Let's make a folder in "analysis" 14_ to put our figures in.
+# Same as :
+num_peaks_df %>%
+ggplot(aes(x = num_peaks,
+           y = total_peak_length)) +
+  geom_point()
 ```
 
-
-
-# plotting num_peaks versus genome coverage.
-? What would you suspect would happen
-```{r peaks vs coverage}
-
-# Let's plot our result of num_peaks versus genome coverage.
-
-ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length, label = dbp)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE, color = "black", lty = 2,
-              formula = 'y ~ x') +
-  geom_text() +
-  ylab("BP covered") +
-  xlab("Number of peaks") +
-  ggtitle("Peak count vs. total bases covered")
-
-# saving MAKE SURE WORKING DIRECTORY IS CORRECT
-ggsave("figures/peak_num_vs_coverage.pdf")
-
-# Feel free to copy code from 14_plotting_R_part_I.Rmd for other versions of this figure.
-
+# changing shapes in plot
+Now let's change the shape of the points outside the aes() layer and in the geom() layer
+```{R changing shapes in plot}
+             
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length)) +
+         
+           geom_point(shape = 'square',
+             color = 'purple')
+# Here are some good resources for other shapes and color vignettes:
+# http://www.sthda.com/english/wiki/ggplot2-point-shapes
 ```
 
-# plotting num peaks on promoters
-Let's did in a bit deeper and see how coverage on promoters.
-```{r number of DBPS on promoters}
-# now let's plot x as num_peaks and y num overlapping promoters.
+# coloring by data in aes() layer
+We colored the plot above in the geom layer, but what if we wanted to color by "is_tf"?
+Since that depends on the data we need to do that in the aes() layer!
+We can even index and run functions in aes()
+```{R # coloring by data in aes() layer}
+# Let's plot the num_peaks -vs- coverage for Zinc finger proteins (C2H2 ZF)
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length,
+                 color = dbd == "C2H2 ZF")) +
+  geom_point()
+```
 
+```{R adding function in aes() layer}
+#simple function in the aes()
+ggplot(num_peaks_df, aes(x = log2(num_peaks/1e3), 
+                 y = total_peak_length/1e6,
+                 color = dbd == "C2H2 ZF")) +
+  geom_point()
+# Wow that sure looks differnt :) of note the inflection point
+# indicates at a certain point the trend is not as linear as we saw before.
+```
 
-ggplot(num_peaks_df,
-       aes(x = num_peaks, y = peaks_overlapping_promoters)) +
+# facet in ggplot by TF annotation
+We can also plot each type of data in a column by using the 'facet' function.
+Let's plot three plots for if DBP is a TF, is not or NA.
+
+```{R facet by TF annotation}
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length
+                )) +
+  facet_wrap(tf ~ .) +
+  geom_point() 
+# nice we see three plots, one for each category.
+# We have a result: All categories have linear relationship
   
+```
 
-  xlab("Peaks per DBP") +
-  ylab("Number of peaks overlapping promoters") +
-  ggtitle("Relationship Between Number of DBP Peaks and Promoter Overlaps")+
+# Geom layer : histogram
+Now let's take a look at other types of plots in the geom layer.
+geom_histogram() is very useful in a lot of analyses. Let's start there.
+
+```{r Geome_histogram}
+# frequencty of peak numbers across DBPs
+ggplot(num_peaks_df, aes(x = num_peaks)) +
+  geom_histogram()
+# Result: peak number is represented by right gaussian.
+# let's add more bins
+ggplot(num_peaks_df, aes(x = num_peaks)) +
+  geom_histogram(bins = 50)
+# Let's chage the color of the bars in histogram by number of peaks.
+# again we need to do this inside aes() since the data needs to read.
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf)) +
+  geom_histogram(bins = 30)
+# this is hard to see the two distributions.
+# let's fix this by adding a 'position' parameter in the geom layer.
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf)) +
+   geom_histogram(bins = 30, position = "dodge")
+# so now we can see the individual data points separated!
+```
+
+# Geom layer : density plot
+DENISTY Plots are also very useful to see where the density of data arises.
+```{R geom_density()}
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf)) +
+   geom_density()
+# but again its hard to see let's fix that with shading or alpha in
+# geom layer
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf)) +
+   geom_density(alpha = 0.1)
+# let's change color of the line now (inside aes())
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf, color = tf)) +
+   geom_density(alpha = 0.3)
+# so now line and fill are same color -- let's see:
+ggplot(num_peaks_df, aes(x = num_peaks, fill = tf, color = tf)) +
+   geom_density(alpha = 0.0)
+# Result TF and other DBPs have similar peak properties
+```
+
+# Multiple Geom layers 
+The geom layer has a lot of options AND you can layer them!
+Let's take out x,y plots above and map them into a 2D density plot
+```{R geom_point() & geom_density_2d}
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length)) +
+  geom_point()+
+  geom_density_2d() 
+# This is helpful as it shows us most of the data is in bottom left
+# what would happen if we change the order?
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length)) +
+   geom_density_2d()+
+    geom_point()
+# it's hard to see but in this case the contour is on top
+# of points and points are below -- subtle but important
+```
+
+# trend lines
+Let's add even more geom_*() layers -- starting with a 'trend line'
+```{r geom_smooth, geome_abline}
+?geom_abline
+# This will make a line with a given slope and intercept
+?geom_smooth
+# This shows variance and deviations of the trend lines
+# let's add them both !
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length)) +
   geom_point() +
-  geom_abline(slope = 1, linetype="dashed") +
-  geom_smooth(method = "lm", se=F, formula = 'y ~ x',
-              color = "#a8404c") +
-  stat_regline_equation(label.x = 35000, label.y = 18000) +
-  ylim(0,60100) +
-  xlim(0,60100)
-
-ggsave("figures/3_peak_num_vs_promoter_coverage.pdf")
-
-# we observe a "saturation of binding events -- as you get more
-# peaks you stop increaseing binding to promoters.
-# maybe it leaks into the gene body let's check
+  geom_abline(slope = 1000, intercept = 0) +
+  geom_smooth(method = "gam") +
+  geom_smooth(method = "loess", col = "red")
 ```
 
-
-# peak Coverage on gene bodies
-```{r peak coverage on gene bodies}
-
-
-ggplot(num_peaks_df,
-       aes(x = num_peaks, y = peaks_overlapping_genebody)) +
-  
-# code to make things pretty
-  xlab("Peaks per DBP") +
-  ylab("Number of peaks overlapping genes") +
-  ggtitle("Relationship Between Number of DBP Peaks and Gene Body Overlaps")+
+# Bar plots
+Let's take a quick look at bar plots 
+we provide the x-axis and ggplot counts for Y.
+We will also use this opportunity to look at level 3) STAT layer
+```{r geom_bar()}
+# let's plot the number of each type of DBD in our set of DBPs 
+ggplot(num_peaks_df, aes(x = dbd)) + 
+  geom_bar()
+# If the we want to provide the Y-axis for a specific DBP
+# we need to apply stat = identity in the geom_bar()
+ggplot(num_peaks_df, aes(
+      x = dbp,
+      y = num_peaks)) +
+        geom_bar(stat = "identity")
+# basically this allows you to command the y-axis 
+# but is very messy in this case
+# let's look at a more realistic example when there is categorical data
+ggplot(num_peaks_df, aes(x = tf, 
+                 y = total_peak_length
+                )) +
   geom_point() +
-  geom_abline(slope = 1, linetype="dashed") +
-  geom_smooth(method = "lm", se=F, formula = 'y ~ x',
-              color = "#a8404c") +
-  stat_regline_equation(label.x = 35000, label.y = 18000) +
-  ylim(0,60100) +
-  xlim(0,60100)
-
-# Interesting result !! Gene bodies explain almost all the places of binding in 
-# the genome! Where as promoters had a non linear asymptope after a certain number 
-# of peaks. VERY COOL and surprising. There are billions of other possible binding sites!
-
-ggsave("/figures/4_peak_num_vs_gene_body_coverage.pdf")
+  stat_summary(fun = "mean",
+               color = "red",
+               shape = 1,
+               size = 1.5)
+# We can use a linear model to find the best trend-line
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+# We can get the slope and intercept from making a lm variable:
+lm_fit <- lm(total_peak_length ~ num_peaks,data = num_peaks_df)
+summary(lm_fit)
+# slope = 1,000 
+# ORDER MATTERS: if reversed the slope is 8 e -3!
+lm_fit <- lm(num_peaks ~ total_peak_lengthdata = num_peaks_df)
+summary(lm_fit)
+# let's convert the lm_fit data to a data_frame using tidy()
+# it's in the library broom:
+library(broom)
+lm_df <- tidy(lm_fit)
+lm_df
+# so much easier to read than summary :)
+# plotting with the actual lm fit:
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length)) +
+  geom_point() +
+  geom_abline(slope = lm_df$estimate[[2]], intercept = lm_df$estimate[[1]])
+# See how this changes if order is changed
 ```
 
-Ok so we have started generating results in this handy num_peaks_df. 
-However, the peak_occurence_df is also very handy for analyses.
-Let's load it in and do some analyses -- THIS ONE IS REALLY COOL :).
+# Summary of where we are at
+Now we have gone through these layers:
 
-# Reading in Peak occurence df
+1) Data -- data being plotted from object indexes etc.
 
-```{r read in peak_occurence_df}
+2) MAPPING -- mapping data (aes)
 
-# First read the file into an object
+3) Statistics -- statical analyses on mapped data
 
-peak_occurence_df <- read.csv("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/peak_occurence_dataframe.csv")
+5) Geom
 
-# let's have a look. This is a summary of the peak occurence df.
-# we did colsums to find how many binding events there are at each promoter
-# so the last column will tell us how many binding events there were at a given promoter. 
+Now let's look at the scales layer
 
+4) scales -- how big small you want things
+Scales is important for outputting specific factors as colors that are "scaled"
+alos other outputs need to be scaled such as scale values to the "mean" etc.
+
+
+# scale layer
+?scale
+
+```{r scale layer}
+# Let's see how we can use the scales layer to change axes.
+ggplot(num_peaks_df, aes(x = log10(num_peaks), y =log10(total_peak_length), color = tf)) +
+  geom_point()+
+  scale_x_continuous(breaks = c(1, 2, 3, 4)) +
+  scale_color_brewer(palette = 3) 
+# scale_x_continious (same for y) is calling the scale layer specifically
+# We are giving it where to put values on X-axis      
 ```
 
+# changes axes limits
+What if we want to set the limits of the axes? 
+We can use 'xlim' & 'ylim' in scale layer.
 
-Let's make a density plot of num DBPs bound per promoter
-# Density plot of binding events
-```{r density plot of DBP localization events}
+```{R xlim and ylim}
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length, color = tf)) +
+  geom_point() +
+  xlim(1e3, 1e5) +
+  ylim(5e5, 6e7) +
+  scale_color_brewer(palette =  2) 
+# coool so we zoomed in!
+```
 
-# Since we are making a density plot we only need the X axis.
+# FACETS
+This will allow us to make multiple plots in the same plot frame or facet
+One limitation is that it can only make the same plots from different data
 
-ggplot(peak_occurence_df, aes(x = number_of_dbp)) +
-geom_density(alpha = 0.2, color = "#424242", fill = "#424242") +
-  
+Be careful in the facet layer that you don't make too many plots. 
+Essentially we make as many figures as there are entries.
+
+FACET_GRID & FACET_WRAP
+```{r facet_grid(), facet_wrap()}
+# First let's take a look at the top three represented DBDs?
+table(num_peaks_df$dbd)[order(table(num_peaks_df$dbd))]
+# Now let's set dbds to these three DBDs.
+dbds <- c("C2H2 ZF", "Homeodomain", "bZIP")
+# Now the plotting beings and good example of running functions in aes()
+ggplot(num_peaks_df %>% filter(dbd %in% dbds),
+       aes(x = num_peaks, y = total_peak_length )) +
+  facet_grid(dbd ~ .) + 
+  geom_point()
+# here we call facet grid. The parameters are rows and columns separated by ~
+# so we said take the DBDs and plot them as rows.
+```
+
+We can also facet grid another parameter -- let's say tf
+
+```{R two facets}
+ggplot(num_peaks_df %>% filter(dbd %in% dbds),
+       aes(x = num_peaks, y = total_peak_length )) +
+  facet_grid(dbd ~ tf) + 
+  geom_point()
+# Here we said plot DBD as rows and tf status as columns -- 
+# We can easily flip this too:
+ggplot(num_peaks_df %>% filter(dbd %in% dbds),
+       aes(x = num_peaks, y = total_peak_length )) +
+  facet_grid(tf ~ dbd) + 
+  geom_point()
+# Thus the ~ is telling which rows and columns are plotted
+```
+
+# facet wrap
+We just used facet_grid, but we can also use facet_wrap
+```{R facet_wrap()}
+ggplot(num_peaks_df %>% filter(dbd %in% dbds), 
+       aes(x = num_peaks, y = total_peak_length )) +
+  facet_wrap(dbd ~ tf) + 
+  geom_point()
+# difference all combos of each factor. Same as before but facet wrap
+# doesn't mind if all the values are in one category. 
+# Overall the same plots as facet_grid()
+```
+
+# DEEPER INTO FACET: we can add some parameters to order the plots
+```{R deeper into facets}
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length )) +
+  facet_wrap(tf ~ ., nrow = 3, ncol = 1) + 
+  geom_point()
+# or 
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length )) +
+  facet_wrap(tf ~ ., nrow = 2) + 
+  geom_point()
+# Note the axis don't scale here -- let's use 'scales = free' parameter
+ggplot(num_peaks_df, aes(x = num_peaks, y = total_peak_length )) +
+  facet_wrap(tf ~ ., scales = "free", ncol = 1) + 
+  geom_point()
+```
+
+# Coordinate layer
+How to represent X and Y coordinates in different coordinate systems.
+This is unlikely to really be used in biological data but an important layer!
+
+
+R has a bunch of built in "coordinate" systems. We have been using Cartesian 
+and it is the most common "coordinate" system.
+But you can also plot data in "polar" and other coordinate systems.
+We can just add it in the "Coordinates layer"
+
+```{r coordinate layer}
+# let's make the coordinates polar instead of cartesian
+ggplot(num_peaks_df, aes(x = dbd)) +
+  geom_bar() +
+  coord_polar()
+# the values eminate from the center and are a "bar_plot" from the center.
+# we can easily see as we did above C2H2 ZF most represented in our data.
+# We can play around in the coordinate space too. 
+# For example to tell what is  the "theta" or circular dimension. 
+ggplot(num_peaks_df) +
+  geom_bar(aes(x = dbd)) +
+  coord_polar(theta = 'y')
+```
+
+# Theme layer
+This is a great way to package all the features you want, colors,
+backgrounds, grid lines etc. We tend to use paper white as a default theme.
+
+We made a default theme that we can source at the beginning of the
+document call _setup.R. Once loaded a "paper white" theme will be available.
+
+Here is an example of a 'theme' is called in ggPlot
+
+```{r themes}
+ggplot(num_peaks_df, aes(x = num_peaks)) + 
+  geom_density(alpha = 0.2, color = "#424242", fill = "#424242") +
   theme_paperwhite() +
-  xlab(expression("Number of DBPs")) +
+  xlab(expression("Number of peaks")) +
   ylab(expression("Density")) +
   ggtitle("Promoter binding events",
-          subtitle = "mRNA and lncRNA genes") 
-
-# Wow what a result! Last year we only saw up to 111 binding events at a promoter
-# this is kind of validated where the first peak in the distribution falls at 100
-# binding events -- yet there is a second distribution of regions of 300 or more 
-# binding events -- wonder what those are :) ?
-
-# VERY COOL let's print out the figure
-
-ggsave("figures/num_binding_events_per_promoter.pdf")
-
+          subtitle = "mRNA and lncRNA genes")
+# Note this example build everything from labels to data presentation!
+# Let's take a look at _setup.R
+# Nice, it basically calls a "function" in ggplot
+# You can change this as you please by going through each line (hint: google)
 ```
 
+# more themes
+There are a number of built-in themes in addition to 
+the one we've provided. You can see them by typing theme_ 
+then autocomplete and check a few out! Here is cleavland :
 
-Lets find how many promoters don't have any DBPs bound
-# promoters with out binding events
-
-```{r prmoters with out binding events}
-
-# here is just a simple index and filter of the index to have at least 1 dbp bound.
-unbound_promoters <- peak_occurence_df %>% 
-  filter(peak_occurence_df$number_of_dbp < 1)
-
-# how many are there?
-nrow(unbound_promoters)
-# so there are only a few 6,747 promoters that don't have binding evetns (~10%)
-
-#  let's put it in a folder called results. We will always use this folder structure
-write_csv(unbound_promoters, "results/unbound_promoters.csv")
-
-```
-
-
-# Do any DBPs never bind a promoter?
-```{r is there a DBP that doesn't bind promoters?}
-
-# we actually don't need code for this we can look in num_peaks_df and sort :)
-# There are only a few and we may want to filter these out above.
-
-```
-
-# lncRNA versus mRNA promoter binding
-Let's compare the binding patterns of lncRNA vs mRNA promoters.
-While we are at it let's do some deep dives into the aes layer
-This is required to make two plots in one :)
-
-```{r}
-
-# Plotting lncRNA -vs mRNA promoter binding distribution
-# for more advanced figure making check out the code below.
-# it is not the best practice to do to many analyses in ggplot.
-# The below esxample shows how powerful and flexible ggplot is.
-
+```{r more themes}
 ggplot(num_peaks_df, aes(x = num_peaks)) +
-  geom_point(aes(y = peaks_overlapping_lncrna_promoters), color = "red") +
-  geom_point(aes(y = peaks_overlapping_mrna_promoters), color = "black") +
-  stat_regline_equation(aes(y = peaks_overlapping_lncrna_promoters), color = "red") +
-  stat_regline_equation(aes(y = peaks_overlapping_mrna_promoters), color = "black", label.y = 20000) +
-  geom_smooth(aes(y = peaks_overlapping_lncrna_promoters), method = "lm", se = FALSE, formula = "y ~ x") +
-  geom_smooth(aes(y = peaks_overlapping_mrna_promoters), method = "lm", se = FALSE, formula = "y ~ x")
-
-ggsave("figures/lncRNA-mRNA-promoter_binding.pdf")
-
-# Nice we see that mRNA promoters have about 4x more binding (from slope)
-# Both follow a fairly linear trend except mRNA may have saturate quicker.
-
-
-# This is just a fancier version of the same thing -- not mutate to clean up names
-# this first part is manipulating the num peaks df with pivot longer
-num_peaks_dfl <- num_peaks_df %>%
-  dplyr::select(-peaks_overlapping_promoters) %>%
-  # selecting these to cols to pivot longer
-  pivot_longer(cols = peaks_overlapping_lncrna_promoters:peaks_overlapping_mrna_promoters,
-               names_to = "gene_type",
-               values_to = "peaks_overlapping_promoters") %>%
-  mutate(gene_type = gsub("peaks_overlapping_", "", gene_type))
-
-# plotting
-ggplot(num_peaks_dfl, aes(x = num_peaks, y = peaks_overlapping_promoters, 
-                         col = gene_type)) +
-         geom_point() +
-         geom_abline(slope = 1, linetype="dashed") +
-  geom_smooth(method = "lm", se = FALSE, formula = "y ~ x") +
-  stat_regline_equation() +
-  scale_color_manual(values = c("#a8404c", "#424242"))+
-  xlab("Peaks per DBP") +
-  ylab("Peaks Overlapping Promoters") +
-  ggtitle("Number of DBP Peaks and Promoter Overlaps")
-#ggsave("figures/peaks_overlaps_relationship_by_gene_type.png", height = 5, width = 8)
-ggsave("figures/peaks_overlaps_relationship_by_gene_type.pdf", height = 5, width = 8)
-``` 
-
+  geom_density() +
+  theme_cleveland()
+# we can load our custom theme paper_white
+ggplot(num_peaks_df, aes(x = num_peaks)) +
+  geom_density() +
+  theme_minimal()
+```
 ############
 exeRcise:
 ############
