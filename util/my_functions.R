@@ -4,6 +4,8 @@
 
 
 ###############################################
+# fun
+###############################################
 #' A function to multiply two numbers
 #'
 #' @description 
@@ -15,6 +17,8 @@ fun <- function(x, y) {
   ans <- x * y
   return(ans)
 }
+###############################################
+# import peaks
 ###############################################
 #' A function to find import peaks from list of dbp's
 #'
@@ -51,6 +55,8 @@ import_peaks <- function(consensus_file_path = "/scratch/Shares/rinnclass/CLASS_
   return(peak_list)
 }
 ###############################################
+# read_peaks
+###############################################
 #' @description 
 #' take in broad peaks and outputs canonical chromosome GRanges object
 #' 
@@ -64,6 +70,8 @@ read_peaks <- function(broad_peak_file, filter_to_canonical_chr = TRUE) {
                 ranges = IRanges(start=dat$V2,end=dat$V3))
   return(gr)
 }
+###############################################
+# intersect_peaks
 ###############################################
 #' intersect replicates into a "consensus peak list" 
 #' 
@@ -90,6 +98,8 @@ intersect_peaks <- function(peak_list) {
 
 
 
+###############################################
+# create consensus peaks
 ###############################################
 #' intersect replicates into a "consensus peak list" 
 #' 
@@ -164,6 +174,8 @@ create_consensus_peaks <- function(broadpeakfilepath = "/scratch/Shares/rinnclas
   return(consensus_peaks)
 }
 ###############################################
+# get promoter regions
+###############################################
 #' function to subset features for promomters. 
 #' 
 #' @description feature_subset
@@ -197,8 +209,75 @@ get_promoter_regions <- function(gencode_gr, biotype, upstream = 3e3, downstream
 
 
 
+###############################################
+# profile tss
+###############################################
+#' do the whole tss thing
+#' 
+#' @description 
+#' 
+#' @param gencode_gr
+#'  
+#'  
+#' @param biotype
+#' 
+#'
+#' @param upstream
+#'
+#'
+#' @param downstream
+#'
 
-
+profile_tss <- function(peaks, 
+                        promoters_gr,
+                        upstream = 3e3,
+                        downstream = 3e3) {
+  
+  # performing coverage function 
+  peak_coverage <- coverage(peaks)
+  # keeping track of overlaps in RLE
+  coverage_length <- elementNROWS(peak_coverage)
+  # Defining a GRanges of the promter window
+  coverage_gr <- GRanges(seqnames = names(coverage_length),
+                         IRanges(start = rep(1, length(coverage_length)), 
+                                 end = coverage_length))
+  
+  # defining the promoters 
+  promoters_gr <- subsetByOverlaps(promoters_gr, 
+                                   coverage_gr, 
+                                   type="within", 
+                                   ignore.strand=TRUE)
+  # making sure the chromosomes represented are used (prevent error if chr is missing)
+  chromosomes <- intersect(names(peak_coverage), 
+                           unique(as.character(seqnames(promoters_gr))))
+  # arranging chromosomes in the same order
+  peak_coverage <- peak_coverage[chromosomes]
+  # converting to InterRangesList
+  promoters_ir <- as(promoters_gr, "IntegerRangesList")[chromosomes]
+  # creating a views object for promoter coverage (because in RLE)
+  promoter_peak_view <- Views(peak_coverage, promoters_ir)
+  # turning into a vector with ViewApply (because in RLE keeping track of where overlaps are)
+  promoter_peak_view <- lapply(promoter_peak_view, function(x) t(viewApply(x, as.vector)))
+  # binding each of the view vectors
+  promoter_peak_matrix <- do.call("rbind", promoter_peak_view)
+  # grabing and reversing promoters on the - strand
+  minus_idx <- which(as.character(strand(promoters_gr)) == "-")
+  
+  # reversing the order from 6,000 - 1 to 1- 6000
+  promoter_peak_matrix[minus_idx,] <- promoter_peak_matrix[minus_idx,
+                                                           ncol(promoter_peak_matrix):1]
+  # eliminating promoters with no binding 
+  promoter_peak_matrix <- promoter_peak_matrix[rowSums(promoter_peak_matrix) > 1,]
+  # summing all the vectors of a given DBP to the promoter window
+  peak_sums <- colSums(promoter_peak_matrix)
+  # calculating the density at each position in the promoter window
+  peak_dens <- peak_sums/sum(peak_sums)
+  # making it go from -3K to + 3K and creating a df
+  metaplot_df <- data.frame(x = -upstream:(downstream-1),
+                            dens = peak_dens)
+  
+  return(metaplot_df)
+}
 
 
 
