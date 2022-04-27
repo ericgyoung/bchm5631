@@ -8,13 +8,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = FALSE)
 library(tidyverse)
-library(tximport)
+# library(tximport)
 library(DESeq2)
 library(ggrepel)
 library(pheatmap)
+
+# BiocManager::install("DESeq2")
+# install.packages("https://cran.r-project.org/src/contrib/Archive/locfit/locfit_1.5-9.4.tar.gz", repos=NULL, type="source")
 ```
 
 
@@ -39,44 +41,33 @@ process {
   memory='16 GB'
   maxForks=10
 }
-
-# go to correct working directory
+# go to correct working directory .../analysis/18_running_RNA_seq
 nano nextflow.config
-
 # paste in text above
-
-
 ```
 
 # Run.sh file
 Now the run.sh file that gives nf-core/rnaseq all the instructions for nextflow to task.
 ```{bash run.sh file}
-
 # Here are all the slurm instructions:
-
-
 #!/bin/bash
 #SBATCH -p long
 #SBATCH --job-name=HEPG2_rna_seq
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=john.rinn@colorado.edu
+#SBATCH --mail-user=your_emailn@colorado.edu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --mem=6gb
 #SBATCH --time=20:00:00
 #SBATCH --output=nextflow.out
 #SBATCH --error=nextflow.err
-
 pwd; hostname; date
 echo "Here we go You've requested $SLURM_CPUS_ON_NODE core."
-
 module load singularity/3.1.1
-
 # Now the inputs for nextflow.
 # I resorted to older version as data does 
 # not pass more recent versions -- thus
 # we don't need a design file after all but you will in your own work
-
 # first telling which pipeline to run
 nextflow run nf-core/rnaseq -r 1.4.2 \
 # resume is awesome and let's us pick up where we left off
@@ -84,131 +75,115 @@ nextflow run nf-core/rnaseq -r 1.4.2 \
 # setting up a singularity container for reproducibility 
 -profile singularity \
 # wher is the data :)
---reads '/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/17_API_RNASEQ/fastq/*{_read1,_read2}.fastq.gz' \
+--reads 'your_path_17_something/fastq/*{_read1,_read2}.fastq.gz' \
 # genome file
---fasta /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/GRCh38.p13.genome.fa \
+--fasta /scratch/Shares/rinnclass/CLASS_2022/data/genomes/GRCh38.p13.genome.fa \
 # genome annotation file
---gtf /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/gencode.v32.annotation.gtf \
+--gtf /scratch/Shares/rinnclass/CLASS_2022/data/gencode.v32.annotation.gtf \
 # aligner -- unique to 1.4.2 others use different parameters.
 # IMPORTANT TO CHECK ALIGNER INSTRUCTION (but will get an error if wrong :)
 --pseudo_aligner salmon \
 # Telling NF_CORE that we imported gencode genome annotations
 --gencode \
 # who to tell when job is done
---email john.rinn@colorado.edu \
+--email your email@colorado.edu \
 # what the config file is named (note using c language)
 -c nextflow.config
-
 # date times out
 date
-
 ```
 
 # creating run.sh
 Here is the run.sh in full form for nano 
-Goto NF_CORE_RUN folder, nano and paste in below 
-```{bash run.sh}
+Go to /analysis/18_running_nf_core folder, nano and paste in below 
 
+# NOTE you will need to change email and path to fastq -- use same ending path  synta
+```{bash run.sh}
 #!/bin/bash
 #SBATCH -p long
 #SBATCH --job-name=HEPG2_rna_seq
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=john.rinn@colorado.edu
+#SBATCH --mail-user=eryo3113@colorado.edu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --mem=6gb
-#SBATCH --time=20:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=nextflow.out
 #SBATCH --error=nextflow.err
-
 pwd; hostname; date
 echo "Here we go You've requested $SLURM_CPUS_ON_NODE core."
-
 module load singularity/3.1.1
-
 nextflow run nf-core/rnaseq -r 1.4.2 \
 -resume \
 -profile singularity \
---reads '/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/17_API_RNASEQ/fastq/*{_read1,_read2}.fastq.gz' \
---fasta /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/GRCh38.p13.genome.fa \
---gtf /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/gencode.v32.annotation.gtf \
+--reads '/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/17_API/fastq/*{_read1,_read2}.fastq.gz' \
+--fasta /scratch/Shares/rinnclass/CLASS_2022/data/genomes/GRCh38.p13.genome.fa \
+--gtf /scratch/Shares/rinnclass/CLASS_2022/data/gencode.v32.annotation.gtf \
 --pseudo_aligner salmon \
 --gencode \
---email john.rinn@colorado.edu \
+--email eryo3113@colorado.edu \
 -c nextflow.config
-
 date
 ```
 
 # design file 
+We no longer need the design file since this data only runs on onlder pipeline.
+However if you were to use the new 3.4 this would be required with following format:
 
-# We no longer need the design file since this data only runs on onlder pipeline.
-# However if you were to use the new 3.4 this would be required.
+# sample,replicate,fastq_1,fastq_2,strandedness
 
-Now we need the design file, similar to nf-core/chipseq it has to be very specific :)
-
-sample,replicate,fastq_1,fastq_2,strandedness
+NF_Core RNAseq is now on 3.6 and this data all fails on anything 2.0 or higher.
+So we don't need this but in the future it is required in NF_CORE RNAseq
 
 We made the design file in 17 from code someone else could
 run and get the exact same design file !
 
-# move design file into NF_CORE_RUN dir
+# Let's make the following files in analysis/18_ 
 
-cd /scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/17_API_RNASEQ
-cp design.csv /scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/18_running_RNAseq_NF_CORE/NF_CORE_RUN
+# NEXTFLOW.CONFIG
 
-# Below are the other files again in case needed
-
-NEXTFLOW.CONFIG
 ```{bash}
-
 process {
   executor='slurm'
   queue='short'
   memory='16 GB'
   maxForks=10
 }
-
 ```
 
-RUN.SH (DOES NOT REQUIRE DESIGN FILE)
+RUN.SH (DOES NOT REQUIRE DESIGN FILE) for NF_CORE 1.4.2
 ```{bash }
 #!/bin/bash
 #SBATCH -p long
 #SBATCH --job-name=HEPG2_rna_seq
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=john.rinn@colorado.edu
+#SBATCH --mail-user=your_email
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --mem=6gb
 #SBATCH --time=20:00:00
 #SBATCH --output=nextflow.out
 #SBATCH --error=nextflow.err
-
 pwd; hostname; date
 echo "Here we go You've requested $SLURM_CPUS_ON_NODE core."
-
 module load singularity/3.1.1
-
 nextflow run nf-core/rnaseq -r 1.4.2 \
 -resume \
 -profile singularity \
---reads '/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/17_API_RNASEQ/fastq/*{_read1,_read2}.fastq.gz' \
---fasta /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/GRCh38.p13.genome.fa \
+--reads 'path/17_API_RNASEQ/fastq/*{_read1,_read2}.fastq.gz' \
+--fasta /scratch/Shares/rinnclass/CLASS_2022/data/genomes/GRCh38.p13.genome.fa \
 --gtf /scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/gencode.v32.annotation.gtf \
 --pseudo_aligner salmon \
 --gencode \
---email john.rinn@colorado.edu \
+--email your_email@colorado.edu \
 -c nextflow.config
-
 date
-
 ```
 
 # LET'S RUN THE PIPELINE!
 
 # go to right directory
-cd /scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/18_running_RNAseq_NF_CORE/NF_CORE_RUN
+cd /scratch/Shares/rinnclass/CLASS_2022/ ..... 18_running_RNAseq_NF_CORE/NF_CORE_RUN
 
 sbatch run.sh
 
@@ -216,3 +191,6 @@ tail -f nextflow.out
 
 Voila you are doing RNAseq!
 
+```{r my path for fastq files}
+# --reads '/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/17_API_RNASEQ/fastq/*{_read1,_read2}.fastq.gz' \
+```

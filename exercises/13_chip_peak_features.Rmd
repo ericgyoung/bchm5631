@@ -196,7 +196,7 @@ write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercis
 ```
 
 # Occurence matrix of overlaps
-Now let's also use our 'count_peaks_per_feature' function to use the 'occurence' parameter
+Now let's also use our 'count_peaks_per_feature' function to use the 'occurrence' parameter
 We will make a matrix that records all the overlaps with all promoters.
 
 ```{r count_peaks_per_feature occurence matrix}
@@ -215,7 +215,7 @@ write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2022/EricY
 
 # Peak occurence as data.frame
 Now let's make the peak occurence matrix into a DF for easier access -- but not computation.
-```{R turnign peak_occurence matrix into data.frame}
+```{R turning peak_occurence matrix into data.frame}
 # reading back in to be sure all is good.
 # peak_occurence_df <- read.table("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
 # First make sure promoter_peak_occurence and lncrna_mrna_promoters are in the same order
@@ -233,7 +233,7 @@ peak_occurence_df <- data.frame("gene_id" = colnames(promoter_peak_occurence),
 # Let's write out this data frame -- all this code & run time is now encapsulated in one .csv :)
 write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2022/EricY/bchm/exercises/analysis/12_peak_features/peak_occurence_dataframe.csv")
 # write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/12_peak_features/peak_occurence_dataframe.csv")
-# Cool feel free to open this one -- even in excel :) 
+# Cool feel free to open this one -- even in excel :)
 ```
 
 #############

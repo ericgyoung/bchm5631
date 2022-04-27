@@ -70,7 +70,7 @@ lncrna_mrna_promoters <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_20
 names(lncrna_mrna_promoters) <- lncrna_mrna_promoters$gene_id
 ```
 
-# Now let's make anntoation files for lncRNA and mRNA promoters seperately
+# Now let's make annotation files for lncRNA and mRNA promoters seperately
 ```{R making lncRNA and mRNA promoter files seperately}
 # creating lncRNAs promoter features
 lncrna_promoters <- get_promoter_regions(gencode_gr, biotype = "lncRNA")
